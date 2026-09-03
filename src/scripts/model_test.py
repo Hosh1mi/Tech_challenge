@@ -36,21 +36,25 @@ question = "Natalia sold clips to 48 of her friends in April, and then she sold 
 MODEL_PATH = "models/Qwen2.5-Math-1.5B"
 tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
 
+# prompt = """
+# Natalia sold clips to 48 of her friends in April, and then she sold half as many clips in May. How many clips did Natalia sell altogether in April and May?
+# """
+
 # connect the 2 prompts or separate roles???
 
-prompt = SYS_PROMPT.format(instruction=instruction) + "\n" + SYS_PROMPT.format(instruction=instruction)
-# messages = [
-#     {
-#         "role": "system",
-#         "content": SYS_PROMPT.format(instruction=instruction)
-#     },
-#     {
-#         "role": "user",
-#         "content": USR_PROMPT.format(question=question)
-#     }
-# ]
+prompt = SYS_PROMPT.format(instruction=instruction) + "\n" + USR_PROMPT.format(question=question)
+messages = [
+    {
+        "role": "system",
+        "content": SYS_PROMPT.format(instruction=instruction)
+    },
+    {
+        "role": "user",
+        "content": USR_PROMPT.format(question=question)
+    }
+]
 
-# prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
 
 if __name__ == "__main__":
     llm = LLM(model=MODEL_PATH, gpu_memory_utilization=0.7)
@@ -58,7 +62,9 @@ if __name__ == "__main__":
     sampling_params = SamplingParams(
         temperature=1.0,
         top_p=1,
-        max_tokens=1024
+        max_tokens=1024,
+        stop=["</answer>"],
+        include_stop_str_in_output=True
     )
 
     outputs = llm.generate(
