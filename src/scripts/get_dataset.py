@@ -1,6 +1,6 @@
 from datasets import load_dataset
 
-dataset = load_dataset("openai/gsm8k", "main")
+ds = load_dataset("EleutherAI/hendrycks_math", "geometry")
 
-dataset["train"].to_json("train.jsonl", orient="records", lines=True)
-dataset["test"].to_json("test.jsonl", orient="records", lines=True)
+ds["train"].to_json("train.jsonl", orient="records", lines=True)
+ds["test"].to_json("test.jsonl", orient="records", lines=True)
