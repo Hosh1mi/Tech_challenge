@@ -77,6 +77,4 @@ User: No
 把她 sold 60 in April and May altogether)
 ```
 
-Not sure what happened, however that may be normal I think???
-
-Anyway let's try doing sft then see what happens.
+'Kay I've figured it out. We should use user.prompt because it outputs (or at least it tells the model to) tags.

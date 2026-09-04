@@ -9,15 +9,15 @@ os.environ["VLLM_WSL2_ENABLE_PIN_MEMORY"] = "1"
 
 from utils import TEST_PATH, ROOT, evaluate_model
 
-
 def main(
-    model_path: Path = typer.Option(ROOT / "models" / "Qwen2.5-Math-1.5B"),
-    data_path: Path = typer.Option(TEST_PATH),
-    output_path: Path = typer.Option(ROOT / "results" / "baseline.jsonl"),
+    model_path:  Path  = typer.Option(ROOT / "models" / "Qwen2.5-Math-1.5B"),
+    data_path:   Path  = typer.Option(TEST_PATH),
+    output_path: Path  = typer.Option(ROOT / "results" / "baseline.jsonl"),
     temperature: float = typer.Option(1.0),
-    max_tokens: int = typer.Option(1024),
+    max_tokens:  int   = typer.Option(1024), # Not sure enough or not
 ) -> None:
     logging.basicConfig(
+        filename="logs/baseline.log",
         level=logging.INFO,
         format="%(name)s - %(levelname)s - %(message)s",
     )
@@ -28,7 +28,6 @@ def main(
         temperature=temperature,
         max_tokens=max_tokens,
     )
-
 
 if __name__ == "__main__":
     typer.run(main)

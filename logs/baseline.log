@@ -1,0 +1,10 @@
+utils - INFO - Loaded 2140 MATH test cases from /home/hoshimi/tech_challenge/data/MATH
+utils - INFO - Formatted 2140 prompts
+utils - INFO - Initializing vLLM model from /home/hoshimi/tech_challenge/models/Qwen2.5-Math-1.5B
+pylatexenc.latexwalker - INFO - Ignoring parse error (tolerant parsing mode): Bad \end macro: expected {environmentname} @(1,177)
+utils - INFO - answer_reward: 0.0332
+utils - INFO - format_reward: 0.1724
+utils - INFO - reward: 0.0332
+utils - INFO - Correct (format=1, answer=1): 71/2140 (3.3%)
+utils - INFO - Format correct, answer wrong (format=1, answer=0): 298/2140 (13.9%)
+utils - INFO - Format incorrect (format=0, answer=0): 1771/2140 (82.8%)
