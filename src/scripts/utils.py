@@ -58,6 +58,44 @@ def analyze_result_categories(metrics: list[dict[str, float]]) -> dict[str, int]
             assert(0)
     return categories
 
+def extract_answer(solution: str) -> str:
+    """
+    Note that every solution has a `\\boxed{}` as answer.
+    So we use that as the answer.
+    """
+    target = r"\boxed{"
+    pos = solution.rfind(target)
+
+    # Haven't find one that hasn't got this feature
+    # if pos == -1:
+    #     return solution.strip()
+
+    start = pos + len(target)
+    end = start
+
+    while end < len(solution):
+        end += 1
+
+    return target + solution[start:end]
+
+
+def convert_dataset(input_path: Path, output_path: Path) -> None:
+    with xopen(input_path, "r") as fin, xopen(output_path, "w") as fout:
+        for line in fin:
+            item = json.loads(line)
+            prompt = load_user_prompt().format(question=item["problem"])
+
+            answer = item["solution"].strip() + "\n</think>\n<answer>" + extract_answer(item["solution"]) + "</answer>"
+
+            fout.write(
+                json.dumps(
+                    {
+                        "prompt": prompt,
+                        "answer": answer
+                    },
+                )
+                + "\n"
+            )
 
 def evaluate_model(
     model_path:             Path,

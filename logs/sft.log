@@ -1,0 +1,9 @@
+__main__ - INFO - Started training
+__main__ - INFO - Data loaded
+__main__ - INFO - Optimizer set up
+__main__ - INFO - epoch 0 started
+__main__ - INFO - step 0: before forward
+__main__ - INFO - step 0: after forward
+__main__ - INFO - epoch=0, step=0, loss=0.860654
+__main__ - INFO - step 1: before forward
+__main__ - INFO - step 1: after forward
