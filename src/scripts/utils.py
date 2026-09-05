@@ -13,19 +13,18 @@ TEST_PATH = ROOT / "data" / "MATH"
 logger = logging.getLogger(__name__)
 
 def load_test_data(data_path: Path = TEST_PATH) -> list[dict]:
-    test_files = Path(data_path).glob("*/test.jsonl")
+    test_file = Path(data_path)
 
     examples = []
-    for test_file in test_files:
-        with xopen(test_file) as file:
-            for line in file:
-                example = json.loads(line)
-                examples.append({
-                    "question": example["problem"],
-                    "answer": example["solution"],
-                    "level": example.get("level"),
-                    "type": example.get("type"),
-                })
+    with xopen(test_file) as file:
+        for line in file:
+            example = json.loads(line)
+            examples.append({
+                "question": example["problem"],
+                "answer": example["solution"],
+                "level": example.get("level"),
+                "type": example.get("type"),
+            })
 
     logger.info("Loaded %d MATH test cases from %s", len(examples), data_path)
     return examples
@@ -58,43 +57,65 @@ def analyze_result_categories(metrics: list[dict[str, float]]) -> dict[str, int]
             assert(0)
     return categories
 
+# def extract_answer(solution: str) -> str:
+#     """
+#     Note that every solution has a `\\boxed{}` as answer.
+#     So we use that as the answer.
+#     """
+#     target = r"\boxed{"
+#     pos = solution.rfind(target)
+
+#     # Haven't find one that hasn't got this feature
+#     # if pos == -1:
+#     #     return solution.strip()
+
+#     start = pos + len(target)
+#     end = start
+
+#     while end < len(solution):
+#         end += 1
+
+#     return target + solution[start:end]
+
 def extract_answer(solution: str) -> str:
-    """
-    Note that every solution has a `\\boxed{}` as answer.
-    So we use that as the answer.
-    """
-    target = r"\boxed{"
-    pos = solution.rfind(target)
+    marker = "####" 
+    return solution.rsplit(marker, 1)[1].strip()
 
-    # Haven't find one that hasn't got this feature
-    # if pos == -1:
-    #     return solution.strip()
+# def convert_dataset(input_path: Path, output_path: Path) -> None:
+#     with xopen(input_path, "r") as fin, xopen(output_path, "w") as fout:
+#         for line in fin:
+#             item = json.loads(line)
+#             prompt = load_user_prompt().format(question=item["problem"])
 
-    start = pos + len(target)
-    end = start
+#             answer = item["solution"].strip() + "\n</think>\n<answer>" + extract_answer(item["solution"]) + "</answer>"
 
-    while end < len(solution):
-        end += 1
+#             fout.write(
+#                 json.dumps(
+#                     {
+#                         "prompt": prompt,
+#                         "answer": answer
+#                     },
+#                 )
+#                 + "\n"
+#             )
 
-    return target + solution[start:end]
-
-
-def convert_dataset(input_path: Path, output_path: Path) -> None:
-    with xopen(input_path, "r") as fin, xopen(output_path, "w") as fout:
-        for line in fin:
-            item = json.loads(line)
-            prompt = load_user_prompt().format(question=item["problem"])
-
-            answer = item["solution"].strip() + "\n</think>\n<answer>" + extract_answer(item["solution"]) + "</answer>"
-
-            fout.write(
-                json.dumps(
-                    {
-                        "prompt": prompt,
-                        "answer": answer
-                    },
-                )
-                + "\n"
+def convert_dataset(input_path: Path, output_path: Path) -> None: 
+    with xopen(input_path, "r") as fin, xopen(output_path, "w") as fout: 
+        for line in fin: 
+            item = json.loads(line) 
+            question = item["question"] 
+            solution = item["answer"].strip() 
+            answer = extract_answer(solution) 
+            prompt = load_user_prompt().format(question=question) 
+            formatted_answer = ( f"{solution}\n" "</think>\n" f"<answer>{answer}</answer>" ) 
+            fout.write( 
+                json.dumps( 
+                    { 
+                        "prompt": prompt, 
+                        "answer": formatted_answer, 
+                    } 
+                ) 
+                + "\n" 
             )
 
 def evaluate_model(
@@ -133,8 +154,10 @@ def evaluate_model(
             "id": index, 
             "type": example["type"], 
             "level": example["level"],
-            "question": example["question"], "model_response": response,
-            "answer": example["answer"], "metrics": metric,
+            "question": example["question"], 
+            "model_response": response,
+            "answer": example["answer"], 
+            "metrics": metric,
         })
 
     accuracy = {key: sum(metric[key] for metric in metrics) / len(metrics) for key in metrics[0]}

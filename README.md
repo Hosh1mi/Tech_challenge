@@ -2,6 +2,12 @@
 
 This repository aims to reproduce a simplified procedure of *post-training* on `Qwen2.5-Math-1.5B`.
 
+## TODO
+
+- I think the answers might have been misjudged
+- Make it faster
+- Record more data
+
 ## idk
 
 `Qwen2.5-Math-1.5B` is not a chat/instruct model itself. So giving chat template outputs gibberish:

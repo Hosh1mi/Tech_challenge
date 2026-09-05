@@ -9,6 +9,7 @@ import os
 import torch
 import json
 import torch.nn.functional as F
+import wandb
 
 from pathlib import Path
 from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -20,7 +21,7 @@ import typer
 os.environ["VLLM_WORKER_MULTIPROC_METHOD"] = "spawn"
 os.environ["VLLM_WSL2_ENABLE_PIN_MEMORY"] = "1"
 
-from utils import TEST_PATH, ROOT, evaluate_model, convert_dataset 
+from utils import ROOT, evaluate_model, convert_dataset 
 logger = logging.getLogger(__name__)
 
 class SFTDataset(Dataset):
@@ -118,43 +119,56 @@ def sft_train(
     generate_path: Path
 ):
 
-    # TODO: wandb
+    wandb.init(
+        project="qwen2.5-math-sft",
+        name="Qwen2.5-Math-1.5B-SFT",
+        mode="offline",
+        config={
+            "model": "Qwen2.5-Math-1.5B",
+            "learning_rate": 1e-6,
+            "batch_size": 1,
+            "gradient_accumulation_steps": 8,
+            "num_epochs": num_epochs,
+        },
+    )
 
     model = load_model()
     tokenizer = load_tokenizer()
+
+    model.gradient_checkpointing_enable()   # Trade Memory with time
+    model.config.use_cache = False          # Disable KV Cache, useless when teaching
 
     # convert_dataset(ROOT / "data" / "MATH" / "original" / "train.jsonl", ROOT / "data" / "MATH" / "sft" / "sft_train.jsonl")
     # convert_dataset(ROOT / "data" / "MATH" / "original" / "test.jsonl", ROOT / "data" / "MATH" / "sft" / "sft_test.jsonl")
 
     train_dataset = SFTDataset(
-        ROOT / "data" / "MATH"/ "sft" / "sft_train.jsonl",
+        ROOT / "data" / "MATH" / "sft" / "sft_train_12.jsonl",
         tokenizer,
     )
 
     train_dataloader = DataLoader(
         train_dataset,
-        batch_size=4,
+        batch_size=1,
         shuffle=True,
         collate_fn=lambda batch: collate_fn(batch, tokenizer) # Not sure why. But this passes tokenizer anyway.
     )
 
     logger.info("Data loaded")
 
+    # idk which one to choose really. SGD surely is smallest
     optimizer = torch.optim.AdamW(
         model.parameters(),
-        lr=1e-5,
+        lr=1e-6,
     )
+
     logger.info("Optimizer set up")
     device = "cuda:0"
+    gradient_accumulation_steps = 8
     for epoch in range(num_epochs):
         logger.info(f"epoch {epoch} started")
         for idx, batch in enumerate(train_dataloader):
             input_ids = batch["input_ids"].to(device)
             response_mask = batch["response_mask"].to(device)
-
-            logger.info(f"step {idx}: before forward")
-            optimizer.zero_grad()
-            logger.info(f"step {idx}: after forward")
 
             outputs = model(
                 input_ids=input_ids
@@ -176,33 +190,36 @@ def sft_train(
                 / shift_mask.sum()
             )
 
+            loss = loss / gradient_accumulation_steps
             loss.backward()
 
-            optimizer.step()
-
-            if idx % 10 == 0:
+            if (idx + 1) % gradient_accumulation_steps == 0:
+                optimizer.step()
+                optimizer.zero_grad()
                 logger.info(
                     f"epoch={epoch}, "
                     f"step={idx}, "
                     f"loss={loss.item():.6f}"
                 )
 
-    model = AutoModelForCausalLM.save_pretrained(
-        generate_path
-    )
+                wandb.log({
+                    "train/loss": loss.item() * gradient_accumulation_steps,
+                    "train/epoch": epoch,
+                    "train/step": idx,
+                })
 
-    tokenizer = AutoTokenizer.save_pretrained(
-        generate_path
-    )
+    model.save_pretrained(generate_path)
+    tokenizer.save_pretrained(generate_path)
+    wandb.finish()
 
 def main(
     model_path:    Path  = typer.Option(ROOT / "models" / "Qwen2.5-Math-1.5B"),
     generate_path: Path  = typer.Option(ROOT / "models" / "Qwen2.5-Math-1.5B-SFT"),
-    data_path:     Path  = typer.Option(TEST_PATH),
+    data_path:     Path  = typer.Option(ROOT / "data" / "MATH" / "original" / "test.jsonl"),
     output_path:   Path  = typer.Option(ROOT / "results" / "SFT.jsonl"),
     temperature:   float = typer.Option(1.0),
     max_tokens:    int   = typer.Option(1024), # Not sure enough or not
-    num_epochs:    int   = typer.Option(2)
+    num_epochs:    int   = typer.Option(1)
 ) -> None:
     logging.basicConfig(
         filename="logs/sft.log",
@@ -212,7 +229,7 @@ def main(
     logger.info("Started training")
     sft_train(num_epochs, generate_path)
     evaluate_model(
-        model_path=model_path,
+        model_path=generate_path,
         data_path=data_path,
         output_path=output_path,
         temperature=temperature,
