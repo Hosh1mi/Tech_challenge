@@ -33,7 +33,7 @@ class SFTDataset(Dataset):
                 item = json.loads(line)
                 prompt_ids = tokenizer(item["prompt"], add_special_tokens=False)["input_ids"]
                 answer_ids = tokenizer(item["answer"], add_special_tokens=False)["input_ids"]
-                if len(prompt_ids) + len(answer_ids) <= 2048:
+                if len(prompt_ids) + len(answer_ids) <= 1024:
                     self.data.append((prompt_ids, answer_ids))
         logger.info("Loaded %d samples from %s", len(self.data), data_path)
 
@@ -52,7 +52,7 @@ class SFTDataset(Dataset):
         }
 
 def load_model(
-    model_path: Path = ROOT / "models" / "Qwen2.5-Math-1.5B"
+    model_path: Path = ROOT / "models" / "Qwen2.5-Math-1.5B-SFT" / "checkpoint-step-500"
 ):
     # Use transformers to train, vLLM to test
     model = AutoModelForCausalLM.from_pretrained(
@@ -64,7 +64,7 @@ def load_model(
     return model
 
 def load_tokenizer(
-    model_path: Path = ROOT / "models" / "Qwen2.5-Math-1.5B"
+    model_path: Path = ROOT / "models" / "Qwen2.5-Math-1.5B-SFT" / "checkpoint-step-500"
 ):
     return AutoTokenizer.from_pretrained(model_path)
 
@@ -195,7 +195,7 @@ def main(
         format="%(name)s - %(levelname)s - %(message)s",
     )
     logger.info("Started training")
-    sft_train(num_epochs, generate_path)
+    # sft_train(num_epochs, generate_path)
     evaluate_model(
         model_path=generate_path,
         data_path=data_path,

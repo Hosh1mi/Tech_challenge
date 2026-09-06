@@ -8,6 +8,16 @@ This repository aims to reproduce a simplified procedure of *post-training* on `
 - Make it faster
 - Record more data
 
+## Training records
+
+### SFT
+
+Algorithm itself is pretty simple. But this one requires full parameter and my device just can't handle.
+
+Thus I limited max-length to 2048, saved every model checkpoint after training 500 data. Then it froze at somewhere at ~2800. 
+
+Skipped sft_train_6, I just don't get it.
+
 ## idk
 
 `Qwen2.5-Math-1.5B` is not a chat/instruct model itself. So giving chat template outputs gibberish:
