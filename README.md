@@ -2,21 +2,41 @@
 
 This repository aims to reproduce a simplified procedure of *post-training* on `Qwen2.5-Math-1.5B`.
 
+## Training Environment
+
+- Nvidia RTX 4060ti 8GB + i7-14700KF
+- Ubuntu 22.04
+
 ## TODO
 
-- I think the answers might have been misjudged
-- Make it faster
-- Record more data
+- Do RSFT next. This one needs real loss, cross entropy.
 
 ## Training records
 
 ### SFT
 
-Algorithm itself is pretty simple. But this one requires full parameter and my device just can't handle.
+> Due to severe hardware limitations, this experiment has not gone well as expected.
 
-Thus I limited max-length to 2048, saved every model checkpoint after training 500 data. Then it froze at somewhere at ~2800. 
+Done full-parameter SFT to `Qwen2.5-Math-1.5B`, using:
+- optimizer: AdamW
+- lr: 1e-6
+- batch size: 1, gradient accumulation: 8
+- enabled bfloat16, gradient checkpointing, sdpa
+- 1 epoch, limiting the input length to 2048
+- saving the temp model after each 500 data
 
-Skipped sft_train_6, I just don't get it.
+The loss graph has been saved to `results/sft_loss.log`. But this one has a **severe** problem, that the loss is *the 8th* sample of each batch, not the *average* loss of 8 samples... This has to be figured out in next experiment. And log the real cross entropy.
+
+Results:
+
+| Reward | Baseline | SFT | Diff |
+|--------|----------|-----|------|
+| Format | 369/2140 = 17.24% | 458/2140 = 21.40% | + 18% |
+| Answer | 71/2140 = 3.32% | 84/2140 = 3.93% | + 24% |
+
+With bottleneck still being the correctness.
+
+Maybe 2 epochs will improve more?
 
 ## idk
 
