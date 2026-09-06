@@ -8,7 +8,7 @@ from xopen import xopen
 from drgrpo_grader import r1_zero_reward_fn
 
 ROOT = Path(__file__).resolve().parents[2]
-TEST_PATH = ROOT / "data" / "MATH"
+TEST_PATH = ROOT / "data" / "MATH" / "original" / "test.jsonl"
 
 logger = logging.getLogger(__name__)
 
@@ -57,66 +57,67 @@ def analyze_result_categories(metrics: list[dict[str, float]]) -> dict[str, int]
             assert(0)
     return categories
 
-# def extract_answer(solution: str) -> str:
-#     """
-#     Note that every solution has a `\\boxed{}` as answer.
-#     So we use that as the answer.
-#     """
-#     target = r"\boxed{"
-#     pos = solution.rfind(target)
-
-#     # Haven't find one that hasn't got this feature
-#     # if pos == -1:
-#     #     return solution.strip()
-
-#     start = pos + len(target)
-#     end = start
-
-#     while end < len(solution):
-#         end += 1
-
-#     return target + solution[start:end]
-
 def extract_answer(solution: str) -> str:
-    marker = "####" 
-    return solution.rsplit(marker, 1)[1].strip()
+    """Extract the final answer from a MATH solution."""
+    marker = r"\boxed"
+    start = solution.rfind(marker)
+    content_start = start + len(marker)
+    if solution[content_start] != "{":
+        end = content_start
+        while end < len(solution) and solution[end] not in "$.,!? \\n":
+            end += 1
+        return solution[content_start:end]
+    content_start += 1
+    depth = 1
+    index = content_start
+    # for \boxed{frac{1}{2}}
+    while index < len(solution) and depth:
+        if solution[index] == "{":
+            depth += 1
+        elif solution[index] == "}":
+            depth -= 1
+        index += 1
+    return solution[content_start:index - 1]
 
-# def convert_dataset(input_path: Path, output_path: Path) -> None:
-#     with xopen(input_path, "r") as fin, xopen(output_path, "w") as fout:
-#         for line in fin:
-#             item = json.loads(line)
-#             prompt = load_user_prompt().format(question=item["problem"])
+def convert_dataset(
+    input_path: Path,
+    output_path: Path,
+    chunk_size: int = 500,
+) -> list[Path]:
+    """Convert an original MATH file into numbered, fixed-size SFT chunks."""
+    input_path = Path(input_path)
+    output_path = Path(output_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_paths = []
+    file_handle = None
 
-#             answer = item["solution"].strip() + "\n</think>\n<answer>" + extract_answer(item["solution"]) + "</answer>"
+    with xopen(input_path, "r") as fin:
+        for index, line in enumerate(fin):
+            if index % chunk_size == 0:
+                if file_handle is not None:
+                    file_handle.close()
+                chunk_number = index // chunk_size + 1
+                chunk_path = output_path.with_name(
+                    f"{output_path.stem}_{chunk_number}{output_path.suffix}"
+                )
+                output_paths.append(chunk_path)
+                file_handle = open(chunk_path, "w")
 
-#             fout.write(
-#                 json.dumps(
-#                     {
-#                         "prompt": prompt,
-#                         "answer": answer
-#                     },
-#                 )
-#                 + "\n"
-#             )
+            item = json.loads(line)
+            question = item["problem"]
+            solution = item["solution"].strip()
+            answer = extract_answer(solution)
+            prompt = load_user_prompt().format(question=question)
+            formatted_answer = f"{solution}</think> <answer>{answer}</answer>"
+            file_handle.write(json.dumps({
+                "prompt": prompt,
+                "answer": formatted_answer,
+            }, ensure_ascii=False) + "\n")
 
-def convert_dataset(input_path: Path, output_path: Path) -> None: 
-    with xopen(input_path, "r") as fin, xopen(output_path, "w") as fout: 
-        for line in fin: 
-            item = json.loads(line) 
-            question = item["question"] 
-            solution = item["answer"].strip() 
-            answer = extract_answer(solution) 
-            prompt = load_user_prompt().format(question=question) 
-            formatted_answer = ( f"{solution}\n" "</think>\n" f"<answer>{answer}</answer>" ) 
-            fout.write( 
-                json.dumps( 
-                    { 
-                        "prompt": prompt, 
-                        "answer": formatted_answer, 
-                    } 
-                ) 
-                + "\n" 
-            )
+    if file_handle is not None:
+        file_handle.close()
+    logger.info("Converted MATH dataset into %d chunks", len(output_paths))
+    return output_paths
 
 def evaluate_model(
     model_path:             Path,

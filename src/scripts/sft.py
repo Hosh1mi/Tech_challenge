@@ -9,7 +9,6 @@ import os
 import torch
 import json
 import torch.nn.functional as F
-import wandb
 
 from pathlib import Path
 from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -17,6 +16,7 @@ from torch.utils.data import Dataset, DataLoader
 from xopen import xopen
 
 import typer
+from tqdm import tqdm
 
 os.environ["VLLM_WORKER_MULTIPROC_METHOD"] = "spawn"
 os.environ["VLLM_WSL2_ENABLE_PIN_MEMORY"] = "1"
@@ -28,9 +28,10 @@ class SFTDataset(Dataset):
     def __init__(self, data_path, tokenizer):
         self.tokenizer = tokenizer
         self.data = []
-        with xopen(data_path, "r") as f:
-            for line in f:
-                self.data.append(json.loads(line))
+        for path in sorted(Path(data_path).parent.glob("sft_train_*.jsonl")):
+            with xopen(path, "r") as f:
+                for line in f:
+                    self.data.append(json.loads(line))
 
     def __len__(self):
         return len(self.data)
@@ -119,19 +120,6 @@ def sft_train(
     generate_path: Path
 ):
 
-    wandb.init(
-        project="qwen2.5-math-sft",
-        name="Qwen2.5-Math-1.5B-SFT",
-        mode="offline",
-        config={
-            "model": "Qwen2.5-Math-1.5B",
-            "learning_rate": 1e-6,
-            "batch_size": 1,
-            "gradient_accumulation_steps": 8,
-            "num_epochs": num_epochs,
-        },
-    )
-
     model = load_model()
     tokenizer = load_tokenizer()
 
@@ -142,7 +130,7 @@ def sft_train(
     # convert_dataset(ROOT / "data" / "MATH" / "original" / "test.jsonl", ROOT / "data" / "MATH" / "sft" / "sft_test.jsonl")
 
     train_dataset = SFTDataset(
-        ROOT / "data" / "MATH" / "sft" / "sft_train_12.jsonl",
+        ROOT / "data" / "MATH" / "sft" / "sft_train_1.jsonl",
         tokenizer,
     )
 
@@ -166,7 +154,7 @@ def sft_train(
     gradient_accumulation_steps = 8
     for epoch in range(num_epochs):
         logger.info(f"epoch {epoch} started")
-        for idx, batch in enumerate(train_dataloader):
+        for idx, batch in enumerate(tqdm(train_dataloader, desc=f"epoch {epoch}")):
             input_ids = batch["input_ids"].to(device)
             response_mask = batch["response_mask"].to(device)
 
@@ -202,15 +190,15 @@ def sft_train(
                     f"loss={loss.item():.6f}"
                 )
 
-                wandb.log({
-                    "train/loss": loss.item() * gradient_accumulation_steps,
-                    "train/epoch": epoch,
-                    "train/step": idx,
-                })
+            if (idx + 1) % 500 == 0:
+                checkpoint_path = generate_path / f"checkpoint-step-{idx + 1}"
+                model.save_pretrained(checkpoint_path)
+                tokenizer.save_pretrained(checkpoint_path)
+                logger.info("Saved checkpoint to %s", checkpoint_path)
+
 
     model.save_pretrained(generate_path)
     tokenizer.save_pretrained(generate_path)
-    wandb.finish()
 
 def main(
     model_path:    Path  = typer.Option(ROOT / "models" / "Qwen2.5-Math-1.5B"),
