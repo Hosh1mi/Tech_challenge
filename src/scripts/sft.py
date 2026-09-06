@@ -28,29 +28,20 @@ class SFTDataset(Dataset):
     def __init__(self, data_path, tokenizer):
         self.tokenizer = tokenizer
         self.data = []
-        for path in sorted(Path(data_path).parent.glob("sft_train_*.jsonl")):
-            with xopen(path, "r") as f:
-                for line in f:
-                    self.data.append(json.loads(line))
+        with xopen(data_path, "r") as f:
+            for line in f:
+                item = json.loads(line)
+                prompt_ids = tokenizer(item["prompt"], add_special_tokens=False)["input_ids"]
+                answer_ids = tokenizer(item["answer"], add_special_tokens=False)["input_ids"]
+                if len(prompt_ids) + len(answer_ids) <= 2048:
+                    self.data.append((prompt_ids, answer_ids))
+        logger.info("Loaded %d samples from %s", len(self.data), data_path)
 
     def __len__(self):
         return len(self.data)
 
     def __getitem__(self, index):
-        item = self.data[index]
-        prompt = item["prompt"]
-        answer = item["answer"]
-
-        prompt_ids = self.tokenizer(
-            prompt,
-            add_special_tokens=False
-        )["input_ids"]
-
-        answer_ids = self.tokenizer(
-            answer,
-            add_special_tokens=False
-        )["input_ids"]
-
+        prompt_ids, answer_ids = self.data[index]
         input_ids = prompt_ids + answer_ids
 
         response_mask = [0] * len(prompt_ids) + [1] * len(answer_ids)
@@ -129,20 +120,6 @@ def sft_train(
     # convert_dataset(ROOT / "data" / "MATH" / "original" / "train.jsonl", ROOT / "data" / "MATH" / "sft" / "sft_train.jsonl")
     # convert_dataset(ROOT / "data" / "MATH" / "original" / "test.jsonl", ROOT / "data" / "MATH" / "sft" / "sft_test.jsonl")
 
-    train_dataset = SFTDataset(
-        ROOT / "data" / "MATH" / "sft" / "sft_train_1.jsonl",
-        tokenizer,
-    )
-
-    train_dataloader = DataLoader(
-        train_dataset,
-        batch_size=1,
-        shuffle=True,
-        collate_fn=lambda batch: collate_fn(batch, tokenizer) # Not sure why. But this passes tokenizer anyway.
-    )
-
-    logger.info("Data loaded")
-
     # idk which one to choose really. SGD surely is smallest
     optimizer = torch.optim.AdamW(
         model.parameters(),
@@ -154,47 +131,50 @@ def sft_train(
     gradient_accumulation_steps = 8
     for epoch in range(num_epochs):
         logger.info(f"epoch {epoch} started")
-        for idx, batch in enumerate(tqdm(train_dataloader, desc=f"epoch {epoch}")):
-            input_ids = batch["input_ids"].to(device)
-            response_mask = batch["response_mask"].to(device)
-
-            outputs = model(
-                input_ids=input_ids
+        for shard_path in sorted((ROOT / "data" / "MATH" / "sft").glob("sft_train_*.jsonl")):
+            train_dataset = SFTDataset(shard_path, tokenizer)
+            train_dataloader = DataLoader(
+                train_dataset,
+                batch_size=1,
+                shuffle=True,
+                collate_fn=lambda batch: collate_fn(batch, tokenizer)
             )
+            for idx, batch in enumerate(tqdm(train_dataloader, desc=f"epoch {epoch} {shard_path.stem}")):
+                input_ids = batch["input_ids"].to(device)
+                response_mask = batch["response_mask"].to(device)
 
-            logits = outputs.logits[:, :-1, :]
-            labels = input_ids[:, 1:]
-            shift_mask = response_mask[:, 1:].float()
+                outputs = model(input_ids=input_ids)
 
-            losses = F.cross_entropy(
-                logits.reshape(-1, logits.size(-1)),
-                labels.reshape(-1),
-                reduction="none", 
-            )
+                logits = outputs.logits[:, :-1, :]
+                labels = input_ids[:, 1:]
+                shift_mask = response_mask[:, 1:].float()
 
-            losses = losses.view_as(shift_mask)
-            loss = (
-                (losses * shift_mask).sum()
-                / shift_mask.sum()
-            )
-
-            loss = loss / gradient_accumulation_steps
-            loss.backward()
-
-            if (idx + 1) % gradient_accumulation_steps == 0:
-                optimizer.step()
-                optimizer.zero_grad()
-                logger.info(
-                    f"epoch={epoch}, "
-                    f"step={idx}, "
-                    f"loss={loss.item():.6f}"
+                losses = F.cross_entropy(
+                    logits.reshape(-1, logits.size(-1)),
+                    labels.reshape(-1),
+                    reduction="none",
                 )
 
-            if (idx + 1) % 500 == 0:
-                checkpoint_path = generate_path / f"checkpoint-step-{idx + 1}"
-                model.save_pretrained(checkpoint_path)
-                tokenizer.save_pretrained(checkpoint_path)
-                logger.info("Saved checkpoint to %s", checkpoint_path)
+                losses = losses.view_as(shift_mask)
+                loss = (losses * shift_mask).sum() / shift_mask.sum()
+
+                loss = loss / gradient_accumulation_steps
+                loss.backward()
+
+                if (idx + 1) % gradient_accumulation_steps == 0:
+                    optimizer.step()
+                    optimizer.zero_grad()
+                    logger.info(
+                        f"epoch={epoch}, "
+                        f"step={idx}, "
+                        f"loss={loss.item():.6f}"
+                    )
+
+                if (idx + 1) % 500 == 0:
+                    checkpoint_path = generate_path / f"checkpoint-step-{idx + 1}"
+                    model.save_pretrained(checkpoint_path)
+                    tokenizer.save_pretrained(checkpoint_path)
+                    logger.info("Saved checkpoint to %s", checkpoint_path)
 
 
     model.save_pretrained(generate_path)
