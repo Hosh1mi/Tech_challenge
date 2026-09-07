@@ -25,18 +25,45 @@ Done full-parameter SFT to `Qwen2.5-Math-1.5B`, using:
 - 1 epoch, limiting the input length to 2048
 - saving the temp model after each 500 data
 
-The loss graph has been saved to `results/sft_loss.log`. But this one has a **severe** problem, that the loss is *the 8th* sample of each batch, not the *average* loss of 8 samples... This has to be figured out in next experiment. And log the real cross entropy.
+The loss graph has been saved to `results/sft_loss.log`. But this one has a **severe** problem, that the loss is *the 8th* sample of each batch divided by 8, not the *average* loss of 8 samples... This has to be figured out in next experiment. And log the real cross entropy.
 
 Results:
 
 | Reward | Baseline | SFT | Diff |
 |--------|----------|-----|------|
-| Format | 369/2140 = 17.24% | 458/2140 = 21.40% | + 18% |
-| Answer | 71/2140 = 3.32% | 84/2140 = 3.93% | + 24% |
+| Format | 369/2140 = 17.24% | 458/2140 = 21.40% | + 24% |
+| Answer | 71/2140 = 3.32% | 84/2140 = 3.93% | + 18% |
 
 With bottleneck still being the correctness.
 
 Maybe 2 epochs will improve more?
+
+## RSFT
+
+> Due to SFT limitations, this experiment, too has not got good results.
+
+Sampled 652 samples from 3385 * 4 candidates. I think RSFT procedure can be enhanced to 
+
+```pseudo
+for i...Q: # Questions
+        for j...G: 
+                candidate = LLM.generate(prompt)
+                if answer_reward(candidate) == 1:
+                        accept
+                else
+                        continue 
+```
+
+At that will be better on this experiment.
+
+Results:
+
+| Reward | SFT | RSFT | Diff |
+|--------|-----|------|------|
+| Format | 21.40% | 22.66% | +6% |
+| Answer | 3.93% | 4.58% | +17% |
+
+The problem is not enough data.
 
 ## idk
 
