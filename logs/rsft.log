@@ -1,0 +1,100 @@
+utils - INFO - Loaded 3385 MATH test cases from /home/hoshimi/tech_challenge/data/MATH/original/train.jsonl
+utils - INFO - Loaded 3385 MATH test cases from /home/hoshimi/tech_challenge/data/MATH/original/train.jsonl
+pylatexenc.latexwalker - INFO - Ignoring parse error (tolerant parsing mode): Unexpected closing environment: 'align' @(1,112)
+pylatexenc.latexwalker - INFO - Ignoring parse error (tolerant parsing mode): Unexpected closing environment: 'array' @(1,2)
+pylatexenc.latexwalker - INFO - Ignoring parse error (tolerant parsing mode): Unexpected mismatching closing brace: '}' @(6,37)
+__main__ - INFO - Samples generated
+__main__ - INFO - Loaded 652 samples from /home/hoshimi/tech_challenge/data/MATH/rsft/rsft_train.jsonl
+__main__ - INFO - Loaded 652 samples from /home/hoshimi/tech_challenge/data/MATH/rsft/rsft_train.jsonl
+__main__ - INFO - epoch=0 step=7 loss=0.762216 response_entropy=0.812467
+__main__ - INFO - epoch=0 step=15 loss=0.570624 response_entropy=0.618450
+__main__ - INFO - epoch=0 step=23 loss=0.397348 response_entropy=0.449358
+__main__ - INFO - epoch=0 step=31 loss=0.432314 response_entropy=0.550763
+__main__ - INFO - epoch=0 step=39 loss=0.484361 response_entropy=0.555517
+__main__ - INFO - epoch=0 step=47 loss=0.952567 response_entropy=1.056339
+__main__ - INFO - epoch=0 step=55 loss=0.707101 response_entropy=0.783790
+__main__ - INFO - epoch=0 step=63 loss=0.640619 response_entropy=0.690969
+__main__ - INFO - epoch=0 step=71 loss=0.597960 response_entropy=0.680664
+__main__ - INFO - epoch=0 step=79 loss=0.504152 response_entropy=0.606249
+__main__ - INFO - epoch=0 step=87 loss=0.613292 response_entropy=0.718669
+__main__ - INFO - epoch=0 step=95 loss=0.656666 response_entropy=0.796852
+__main__ - INFO - epoch=0 step=103 loss=0.533367 response_entropy=0.637589
+__main__ - INFO - epoch=0 step=111 loss=0.482012 response_entropy=0.560417
+__main__ - INFO - epoch=0 step=119 loss=0.544990 response_entropy=0.636016
+__main__ - INFO - epoch=0 step=127 loss=0.363847 response_entropy=0.491770
+__main__ - INFO - epoch=0 step=135 loss=0.742092 response_entropy=0.825650
+__main__ - INFO - epoch=0 step=143 loss=0.464718 response_entropy=0.584710
+__main__ - INFO - epoch=0 step=151 loss=0.750187 response_entropy=0.769975
+__main__ - INFO - epoch=0 step=159 loss=0.407733 response_entropy=0.489511
+__main__ - INFO - epoch=0 step=167 loss=0.726860 response_entropy=0.763510
+__main__ - INFO - epoch=0 step=175 loss=0.716115 response_entropy=0.725151
+__main__ - INFO - epoch=0 step=183 loss=0.381531 response_entropy=0.420841
+__main__ - INFO - epoch=0 step=191 loss=0.562301 response_entropy=0.659419
+__main__ - INFO - epoch=0 step=199 loss=0.487377 response_entropy=0.552216
+__main__ - INFO - epoch=0 step=207 loss=0.517303 response_entropy=0.640607
+__main__ - INFO - epoch=0 step=215 loss=0.582707 response_entropy=0.641095
+__main__ - INFO - epoch=0 step=223 loss=0.548563 response_entropy=0.574196
+__main__ - INFO - epoch=0 step=231 loss=0.676602 response_entropy=0.719003
+__main__ - INFO - epoch=0 step=239 loss=0.401071 response_entropy=0.473359
+__main__ - INFO - epoch=0 step=247 loss=0.574427 response_entropy=0.601816
+__main__ - INFO - epoch=0 step=255 loss=0.449247 response_entropy=0.560590
+__main__ - INFO - epoch=0 step=263 loss=0.542768 response_entropy=0.622798
+__main__ - INFO - epoch=0 step=271 loss=0.647843 response_entropy=0.699551
+__main__ - INFO - epoch=0 step=279 loss=0.344652 response_entropy=0.400720
+__main__ - INFO - epoch=0 step=287 loss=0.510329 response_entropy=0.630289
+__main__ - INFO - epoch=0 step=295 loss=0.522724 response_entropy=0.630563
+__main__ - INFO - epoch=0 step=303 loss=0.488756 response_entropy=0.527188
+__main__ - INFO - epoch=0 step=311 loss=0.497050 response_entropy=0.562818
+__main__ - INFO - epoch=0 step=319 loss=0.449482 response_entropy=0.533240
+__main__ - INFO - epoch=0 step=327 loss=0.560047 response_entropy=0.580246
+__main__ - INFO - epoch=0 step=335 loss=0.414370 response_entropy=0.499430
+__main__ - INFO - epoch=0 step=343 loss=0.918511 response_entropy=0.951251
+__main__ - INFO - epoch=0 step=351 loss=0.652637 response_entropy=0.732400
+__main__ - INFO - epoch=0 step=359 loss=0.505318 response_entropy=0.610676
+__main__ - INFO - epoch=0 step=367 loss=0.667751 response_entropy=0.699250
+__main__ - INFO - epoch=0 step=375 loss=0.380280 response_entropy=0.504219
+__main__ - INFO - epoch=0 step=383 loss=0.666123 response_entropy=0.649233
+__main__ - INFO - epoch=0 step=391 loss=0.601366 response_entropy=0.660860
+__main__ - INFO - epoch=0 step=399 loss=0.585283 response_entropy=0.627688
+__main__ - INFO - epoch=0 step=407 loss=0.558501 response_entropy=0.611418
+__main__ - INFO - epoch=0 step=415 loss=0.492177 response_entropy=0.562155
+__main__ - INFO - epoch=0 step=423 loss=0.750684 response_entropy=0.803199
+__main__ - INFO - epoch=0 step=431 loss=0.690811 response_entropy=0.766019
+__main__ - INFO - epoch=0 step=439 loss=0.660181 response_entropy=0.691584
+__main__ - INFO - epoch=0 step=447 loss=0.708675 response_entropy=0.808505
+__main__ - INFO - epoch=0 step=455 loss=0.440047 response_entropy=0.501736
+__main__ - INFO - epoch=0 step=463 loss=0.464246 response_entropy=0.562710
+__main__ - INFO - epoch=0 step=471 loss=0.958188 response_entropy=1.062052
+__main__ - INFO - epoch=0 step=479 loss=0.495572 response_entropy=0.530089
+__main__ - INFO - epoch=0 step=487 loss=0.813467 response_entropy=0.860799
+__main__ - INFO - epoch=0 step=495 loss=1.015753 response_entropy=1.071999
+__main__ - INFO - epoch=0 step=503 loss=0.503070 response_entropy=0.624294
+__main__ - INFO - epoch=0 step=511 loss=0.431415 response_entropy=0.491547
+__main__ - INFO - epoch=0 step=519 loss=0.513469 response_entropy=0.585961
+__main__ - INFO - epoch=0 step=527 loss=0.481975 response_entropy=0.537081
+__main__ - INFO - epoch=0 step=535 loss=0.507288 response_entropy=0.621349
+__main__ - INFO - epoch=0 step=543 loss=0.359329 response_entropy=0.411809
+__main__ - INFO - epoch=0 step=551 loss=0.646466 response_entropy=0.765986
+__main__ - INFO - epoch=0 step=559 loss=0.727801 response_entropy=0.831222
+__main__ - INFO - epoch=0 step=567 loss=0.717887 response_entropy=0.758194
+__main__ - INFO - epoch=0 step=575 loss=0.414256 response_entropy=0.535855
+__main__ - INFO - epoch=0 step=583 loss=0.520263 response_entropy=0.576711
+__main__ - INFO - epoch=0 step=591 loss=0.426866 response_entropy=0.430025
+__main__ - INFO - epoch=0 step=599 loss=0.713721 response_entropy=0.775582
+__main__ - INFO - epoch=0 step=607 loss=0.566562 response_entropy=0.679826
+__main__ - INFO - epoch=0 step=615 loss=0.476900 response_entropy=0.559993
+__main__ - INFO - epoch=0 step=623 loss=0.682616 response_entropy=0.779960
+__main__ - INFO - epoch=0 step=631 loss=0.407815 response_entropy=0.493963
+__main__ - INFO - epoch=0 step=639 loss=0.671517 response_entropy=0.762447
+__main__ - INFO - epoch=0 step=647 loss=0.529612 response_entropy=0.585885
+utils - INFO - Loaded 2140 MATH test cases from /home/hoshimi/tech_challenge/data/MATH/original/test.jsonl
+utils - INFO - Formatted 2140 prompts
+utils - INFO - Initializing vLLM model from /home/hoshimi/tech_challenge/models/Qwen2.5-Math-1.5B-RSFT
+pylatexenc.latexwalker - INFO - Ignoring parse error (tolerant parsing mode): Unexpected mismatching closing brace: '}' @(1,86)
+pylatexenc.latexwalker - INFO - Ignoring parse error (tolerant parsing mode): Unexpected mismatching closing brace: '}' @(1,167)
+utils - INFO - answer_reward: 0.0458
+utils - INFO - format_reward: 0.2266
+utils - INFO - reward: 0.0458
+utils - INFO - Correct (format=1, answer=1): 98/2140 (4.6%)
+utils - INFO - Format correct, answer wrong (format=1, answer=0): 387/2140 (18.1%)
+utils - INFO - Format incorrect (format=0, answer=0): 1655/2140 (77.3%)
