@@ -26,16 +26,17 @@ os.environ["VLLM_WSL2_ENABLE_PIN_MEMORY"] = "1"
 logger = logging.getLogger(__name__)
 
 class DPODataset(Dataset):
-    def __init__(self, data_path, tokenizer):
+    def __init__(self, data_path, cache_path, tokenizer):
         self.data = []
-        with xopen(data_path, "r") as f:
-            for line in f:
+        with xopen(data_path, "r") as data_file, xopen(cache_path, "r") as cache_file:
+            for line in data_file:
                 item = json.loads(line)
                 prompt = tokenizer(item["prompt"], add_special_tokens=False)["input_ids"]
                 chosen = tokenizer(item["chosen"], add_special_tokens=False)["input_ids"]
                 reject = tokenizer(item["rejected"], add_special_tokens=False)["input_ids"]
                 if len(prompt) + len(chosen) <= 1024 and len(prompt) + len(reject) <= 1024:
-                    self.data.append((prompt, chosen, reject))
+                    cache = json.loads(next(cache_file))
+                    self.data.append((prompt, chosen, reject, cache["ref_chosen_logprob"], cache["ref_reject_logprob"]))
         logger.info("Loaded %d DPO samples.", len(self.data))
 
     def __len__(self):
@@ -45,7 +46,7 @@ class DPODataset(Dataset):
         return self.data[index]
 
 def collate_fn(batch, tokenizer):
-    prompts, chosens, rejects = zip(*batch)
+    prompts, chosens, rejects, ref_chosens, ref_rejects = zip(*batch)
     chosen_ids = [p + c for p, c in zip(prompts, chosens)]
     reject_ids = [p + r for p, r in zip(prompts, rejects)]
     chosen_masks = [[0] * len(p) + [1] * len(c) for p, c in zip(prompts, chosens)]
@@ -58,7 +59,7 @@ def collate_fn(batch, tokenizer):
 
     chosen_ids, chosen_masks = pad(chosen_ids, chosen_masks)
     reject_ids, reject_masks = pad(reject_ids, reject_masks)
-    return chosen_ids, chosen_masks, reject_ids, reject_masks
+    return chosen_ids, chosen_masks, reject_ids, reject_masks, torch.tensor(ref_chosens), torch.tensor(ref_rejects)
 
 def seq_log_prob(model, input_ids, response_mask, device):
     input_ids = input_ids.to(device)
@@ -69,24 +70,46 @@ def seq_log_prob(model, input_ids, response_mask, device):
     token_logprobs = F.log_softmax(logits, dim = -1).gather(-1, labels.unsqueeze(-1)).squeeze(-1)
     return (token_logprobs * mask).sum(dim=-1)
 
-def dpo_train(model_path, data_path, generate_path, num_epochs, num_layers, beta):
+def cache_reference_logprobs(model_path, data_path, cache_path):
+    reference =AutoModelForCausalLM.from_pretrained(
+        model_path,
+        dtype=torch.bfloat16,
+        attn_implementation="sdpa",
+        device_map="cuda:0"
+    )
+    tokenizer = AutoTokenizer.from_pretrained(model_path)
+    reference.eval()
+    for p in reference.parameters():
+        p.requires_grad_(False)
+    cache_path.parent.mkdir(parents=True, exist_ok=True)
+    with xopen(data_path, "r") as data_file, xopen(cache_path, "w") as cache_file, torch.inference_mode():
+        for line in tqdm(data_file, desc="cache reference log-probs"):
+            item = json.loads(line)
+            prompt = tokenizer(item["prompt"], add_special_tokens=False)["input_ids"]
+            chosen = tokenizer(item["chosen"], add_special_tokens=False)["input_ids"]
+            reject = tokenizer(item["rejected"], add_special_tokens=False)["input_ids"]
+            if len(prompt) + len(chosen) > 1024 or len(prompt) + len(reject) > 1024:
+                continue
+            chosen_ids = torch.tensor([prompt + chosen])
+            reject_ids = torch.tensor([prompt + reject])
+            chosen_mask = torch.tensor([[0] * len(prompt) + [1] * len(chosen)])
+            reject_mask = torch.tensor([[0] * len(prompt) + [1] * len(reject)])
+            ref_chosen = seq_log_prob(reference, chosen_ids, chosen_mask, "cuda:0").item()
+            ref_reject = seq_log_prob(reference, reject_ids, reject_mask, "cuda:0").item()
+            cache_file.write(json.dumps({"ref_chosen_logprob": ref_chosen, "ref_reject_logprob": ref_reject}) + "\n")
+    del reference
+    torch.cuda.empty_cache()
+
+def dpo_train(model_path, data_path, cache_path, generate_path, num_epochs, num_layers, beta):
+    tokenizer = AutoTokenizer.from_pretrained(model_path)
+    dataset = DPODataset(data_path, cache_path, tokenizer)
     policy =AutoModelForCausalLM.from_pretrained(
         model_path,
         dtype=torch.bfloat16,
         attn_implementation="sdpa",
         device_map="cuda:0"
     )
-    reference =AutoModelForCausalLM.from_pretrained(
-        model_path,
-        dtype=torch.bfloat16,
-        attn_implementation="sdpa",
-        device_map="cpu"
-    )
-    tokenizer = AutoTokenizer.from_pretrained(model_path)
     policy.train()
-    reference.eval()
-    for p in reference.parameters():
-        p.requires_grad_(False)
     for p in policy.parameters():
         p.requires_grad_(False)
     for block in policy.model.layers[-num_layers:]:
@@ -99,7 +122,7 @@ def dpo_train(model_path, data_path, generate_path, num_epochs, num_layers, beta
     policy.config.use_cache = False
     optimizer = torch.optim.AdamW((p for p in policy.parameters() if p.requires_grad), lr = 5e-6)
     loader = DataLoader(
-        DPODataset(data_path, tokenizer),
+        dataset,
         batch_size=1, 
         shuffle=True,
         collate_fn=lambda batch: collate_fn(batch, tokenizer)
@@ -107,31 +130,49 @@ def dpo_train(model_path, data_path, generate_path, num_epochs, num_layers, beta
     accumulation = 8
     for epoch in range(num_epochs):
         remain_steps = 0
+        accumulated_loss = 0.0
+        accumulated_chosen_reward = 0.0
+        accumulated_reject_reward = 0.0
+        accumulated_margin = 0.0
+        accumulated_accuracy = 0.0
         for idx, batch in enumerate(tqdm(loader, desc=f"dpo epoch {epoch}")):
-            chosen, chosen_mask, reject, reject_mask = batch
-            ref_chosen = seq_log_prob(reference, chosen, chosen_mask, "cpu")
-            ref_reject = seq_log_prob(reference, reject, reject_mask, "cpu")
+            chosen, chosen_mask, reject, reject_mask, ref_chosen, ref_reject = batch
             policy_chosen = seq_log_prob(policy, chosen, chosen_mask, "cuda:0")
             policy_reject = seq_log_prob(policy, reject, reject_mask, "cuda:0")
-            loss = -F.sigmoid(beta * (policy_chosen - ref_chosen.to("cuda:0")) - (policy_reject - ref_reject.to("cuda:0"))).mean()
+            chosen_reward = beta * (policy_chosen - ref_chosen.to("cuda:0"))
+            reject_reward = beta * (policy_reject - ref_reject.to("cuda:0"))
+            reward_margin = chosen_reward - reject_reward
+            loss = -F.logsigmoid(reward_margin).mean()
             (loss / accumulation).backward()
             remain_steps += 1
+            accumulated_loss += loss.item()
+            accumulated_chosen_reward += chosen_reward.mean().item()
+            accumulated_reject_reward += reject_reward.mean().item()
+            accumulated_margin += reward_margin.mean().item()
+            accumulated_accuracy += (reward_margin > 0).float().mean().item()
             if(idx + 1) % accumulation == 0:
                 optimizer.step()
                 optimizer.zero_grad()
                 remain_steps = 0
-                logger.info("epoch=%d step=%d loss=%.6f", epoch, idx, loss.item())
+                logger.info("epoch=%d step=%d loss=%.6f chosen_reward=%.6f reject_reward=%.6f margin=%.6f preference_accuracy=%.4f", epoch, idx, accumulated_loss / accumulation, accumulated_chosen_reward / accumulation, accumulated_reject_reward / accumulation, accumulated_margin / accumulation, accumulated_accuracy / accumulation)
+                accumulated_loss = 0.0
+                accumulated_chosen_reward = 0.0
+                accumulated_reject_reward = 0.0
+                accumulated_margin = 0.0
+                accumulated_accuracy = 0.0
         if remain_steps:
             optimizer.step()
             optimizer.zero_grad()
+            logger.info("epoch=%d step=%d loss=%.6f chosen_reward=%.6f reject_reward=%.6f margin=%.6f preference_accuracy=%.4f", epoch, idx, accumulated_loss / remain_steps, accumulated_chosen_reward / remain_steps, accumulated_reject_reward / remain_steps, accumulated_margin / remain_steps, accumulated_accuracy / remain_steps)
     policy.save_pretrained(generate_path)
     tokenizer.save_pretrained(generate_path)
 
 def main(
     model_path: Path = typer.Option(ROOT / "models" / "Qwen2.5-Math-1.5B-RSFT"),
     data_path:     Path  = typer.Option(ROOT / "data" / "MATH" / "dpo" / "Math-Step-DPO-10K.jsonl"),
+    cache_path:    Path  = typer.Option(ROOT / "data" / "MATH" / "dpo" / "Math-Step-DPO-10K-cache.jsonl"),
     generate_path: Path = typer.Option(ROOT / "models" / "Qwen2.5-Math-1.5B-DPO"),
-    beta: int = typer.Option(0.4),
+    beta: float = typer.Option(0.4),
     num_epochs: int = typer.Option(1),
     num_layers: int = typer.Option(2),
     output_path:   Path  = typer.Option(ROOT / "results" / "DPO.jsonl"),
@@ -142,7 +183,8 @@ def main(
                         level=logging.INFO,
                         format="%(name)s - %(levelname)s - %(message)s",
     )
-    # dpo_train(model_path, data_path, generate_path, num_epochs, num_layers, beta)
+    cache_reference_logprobs(model_path, data_path, cache_path)
+    dpo_train(model_path, data_path, cache_path, generate_path, num_epochs, num_layers, beta)
     evaluate_model(model_path=generate_path, data_path=ROOT / "data" / "MATH" / "original" / "test.jsonl", output_path=output_path,temperature=temperature, max_tokens=max_tokens)
 
 if __name__ == "__main__":
