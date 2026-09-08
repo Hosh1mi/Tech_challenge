@@ -1,0 +1,168 @@
+__main__ - INFO - Loaded 1210 DPO samples.
+__main__ - INFO - Loaded 1210 DPO samples.
+__main__ - INFO - epoch=0 step=7 loss=-0.557610
+__main__ - INFO - epoch=0 step=15 loss=-0.569326
+__main__ - INFO - epoch=0 step=23 loss=-0.436198
+__main__ - INFO - epoch=0 step=31 loss=-0.391117
+__main__ - INFO - epoch=0 step=39 loss=-0.601466
+__main__ - INFO - epoch=0 step=47 loss=-0.506458
+__main__ - INFO - epoch=0 step=55 loss=-0.512744
+__main__ - INFO - epoch=0 step=63 loss=-0.725080
+__main__ - INFO - epoch=0 step=71 loss=-0.478528
+__main__ - INFO - epoch=0 step=79 loss=-0.645462
+__main__ - INFO - epoch=0 step=87 loss=-0.377598
+__main__ - INFO - epoch=0 step=95 loss=-0.607730
+__main__ - INFO - epoch=0 step=103 loss=-0.587584
+__main__ - INFO - epoch=0 step=111 loss=-0.589225
+__main__ - INFO - epoch=0 step=119 loss=-0.670954
+__main__ - INFO - epoch=0 step=127 loss=-0.484420
+__main__ - INFO - epoch=0 step=135 loss=-0.486057
+__main__ - INFO - epoch=0 step=143 loss=-0.591595
+__main__ - INFO - epoch=0 step=151 loss=-0.522593
+__main__ - INFO - epoch=0 step=159 loss=-0.479235
+__main__ - INFO - epoch=0 step=167 loss=-0.600596
+__main__ - INFO - epoch=0 step=175 loss=-0.501059
+__main__ - INFO - epoch=0 step=183 loss=-0.588436
+__main__ - INFO - epoch=0 step=191 loss=-0.617592
+__main__ - INFO - epoch=0 step=199 loss=-0.562943
+__main__ - INFO - epoch=0 step=207 loss=-0.695152
+__main__ - INFO - epoch=0 step=215 loss=-0.623624
+__main__ - INFO - epoch=0 step=223 loss=-0.486086
+__main__ - INFO - epoch=0 step=231 loss=-0.660652
+__main__ - INFO - epoch=0 step=239 loss=-0.448921
+__main__ - INFO - epoch=0 step=247 loss=-0.599840
+__main__ - INFO - epoch=0 step=255 loss=-0.579828
+__main__ - INFO - epoch=0 step=263 loss=-0.592559
+__main__ - INFO - epoch=0 step=271 loss=-0.645371
+__main__ - INFO - epoch=0 step=279 loss=-0.769356
+__main__ - INFO - epoch=0 step=287 loss=-0.716333
+__main__ - INFO - epoch=0 step=295 loss=-0.450662
+__main__ - INFO - epoch=0 step=303 loss=-0.578139
+__main__ - INFO - epoch=0 step=311 loss=-0.727836
+__main__ - INFO - epoch=0 step=319 loss=-0.693235
+__main__ - INFO - epoch=0 step=327 loss=-0.537516
+__main__ - INFO - epoch=0 step=335 loss=-0.665103
+__main__ - INFO - epoch=0 step=343 loss=-0.664583
+__main__ - INFO - epoch=0 step=351 loss=-0.466211
+__main__ - INFO - epoch=0 step=359 loss=-0.610363
+__main__ - INFO - epoch=0 step=367 loss=-0.542574
+__main__ - INFO - epoch=0 step=375 loss=-0.742168
+__main__ - INFO - epoch=0 step=383 loss=-0.643215
+__main__ - INFO - epoch=0 step=391 loss=-0.572738
+__main__ - INFO - epoch=0 step=399 loss=-0.770848
+__main__ - INFO - epoch=0 step=407 loss=-0.566935
+__main__ - INFO - epoch=0 step=415 loss=-0.684758
+__main__ - INFO - epoch=0 step=423 loss=-0.534252
+__main__ - INFO - epoch=0 step=431 loss=-0.869372
+__main__ - INFO - epoch=0 step=439 loss=-0.474070
+__main__ - INFO - epoch=0 step=447 loss=-0.689508
+__main__ - INFO - epoch=0 step=455 loss=-0.677349
+__main__ - INFO - epoch=0 step=463 loss=-0.686636
+__main__ - INFO - epoch=0 step=471 loss=-0.698490
+__main__ - INFO - epoch=0 step=479 loss=-0.668187
+__main__ - INFO - epoch=0 step=487 loss=-0.714374
+__main__ - INFO - epoch=0 step=495 loss=-0.734691
+__main__ - INFO - epoch=0 step=503 loss=-0.663396
+__main__ - INFO - epoch=0 step=511 loss=-0.596936
+__main__ - INFO - epoch=0 step=519 loss=-0.730302
+__main__ - INFO - epoch=0 step=527 loss=-0.687714
+__main__ - INFO - epoch=0 step=535 loss=-0.744186
+__main__ - INFO - epoch=0 step=543 loss=-0.854597
+__main__ - INFO - epoch=0 step=551 loss=-0.600983
+__main__ - INFO - epoch=0 step=559 loss=-0.624557
+__main__ - INFO - epoch=0 step=567 loss=-0.787511
+__main__ - INFO - epoch=0 step=575 loss=-0.648647
+__main__ - INFO - epoch=0 step=583 loss=-0.659919
+__main__ - INFO - epoch=0 step=591 loss=-0.734027
+__main__ - INFO - epoch=0 step=599 loss=-0.794475
+__main__ - INFO - epoch=0 step=607 loss=-0.581132
+__main__ - INFO - epoch=0 step=615 loss=-0.626413
+__main__ - INFO - epoch=0 step=623 loss=-0.687400
+__main__ - INFO - epoch=0 step=631 loss=-0.760462
+__main__ - INFO - epoch=0 step=639 loss=-0.691797
+__main__ - INFO - epoch=0 step=647 loss=-0.707345
+__main__ - INFO - epoch=0 step=655 loss=-0.766316
+__main__ - INFO - epoch=0 step=663 loss=-0.650779
+__main__ - INFO - epoch=0 step=671 loss=-0.804285
+__main__ - INFO - epoch=0 step=679 loss=-0.900970
+__main__ - INFO - epoch=0 step=687 loss=-0.770550
+__main__ - INFO - epoch=0 step=695 loss=-0.538443
+__main__ - INFO - epoch=0 step=703 loss=-0.601447
+__main__ - INFO - epoch=0 step=711 loss=-0.592505
+__main__ - INFO - epoch=0 step=719 loss=-0.581721
+__main__ - INFO - epoch=0 step=727 loss=-0.937792
+__main__ - INFO - epoch=0 step=735 loss=-0.884699
+__main__ - INFO - epoch=0 step=743 loss=-0.610787
+__main__ - INFO - epoch=0 step=751 loss=-0.809133
+__main__ - INFO - epoch=0 step=759 loss=-0.799508
+__main__ - INFO - epoch=0 step=767 loss=-0.793815
+__main__ - INFO - epoch=0 step=775 loss=-0.628285
+__main__ - INFO - epoch=0 step=783 loss=-0.805799
+__main__ - INFO - epoch=0 step=791 loss=-0.930323
+__main__ - INFO - epoch=0 step=799 loss=-0.839844
+__main__ - INFO - epoch=0 step=807 loss=-0.736658
+__main__ - INFO - epoch=0 step=815 loss=-0.674927
+__main__ - INFO - epoch=0 step=823 loss=-0.595351
+__main__ - INFO - epoch=0 step=831 loss=-0.734394
+__main__ - INFO - epoch=0 step=839 loss=-0.872057
+__main__ - INFO - epoch=0 step=847 loss=-0.618446
+__main__ - INFO - epoch=0 step=855 loss=-0.919203
+__main__ - INFO - epoch=0 step=863 loss=-0.827367
+__main__ - INFO - epoch=0 step=871 loss=-0.792278
+__main__ - INFO - epoch=0 step=879 loss=-0.863790
+__main__ - INFO - epoch=0 step=887 loss=-0.699778
+__main__ - INFO - epoch=0 step=895 loss=-0.604767
+__main__ - INFO - epoch=0 step=903 loss=-0.822281
+__main__ - INFO - epoch=0 step=911 loss=-0.646673
+__main__ - INFO - epoch=0 step=919 loss=-0.926445
+__main__ - INFO - epoch=0 step=927 loss=-0.674985
+__main__ - INFO - epoch=0 step=935 loss=-0.862695
+__main__ - INFO - epoch=0 step=943 loss=-0.762691
+__main__ - INFO - epoch=0 step=951 loss=-0.590953
+__main__ - INFO - epoch=0 step=959 loss=-0.883460
+__main__ - INFO - epoch=0 step=967 loss=-0.710001
+__main__ - INFO - epoch=0 step=975 loss=-0.696904
+__main__ - INFO - epoch=0 step=983 loss=-0.892450
+__main__ - INFO - epoch=0 step=991 loss=-0.770415
+__main__ - INFO - epoch=0 step=999 loss=-0.698264
+__main__ - INFO - epoch=0 step=1007 loss=-0.756768
+__main__ - INFO - epoch=0 step=1015 loss=-0.653561
+__main__ - INFO - epoch=0 step=1023 loss=-0.863661
+__main__ - INFO - epoch=0 step=1031 loss=-0.681538
+__main__ - INFO - epoch=0 step=1039 loss=-0.725485
+__main__ - INFO - epoch=0 step=1047 loss=-0.818590
+__main__ - INFO - epoch=0 step=1055 loss=-0.942864
+__main__ - INFO - epoch=0 step=1063 loss=-0.715809
+__main__ - INFO - epoch=0 step=1071 loss=-0.745284
+__main__ - INFO - epoch=0 step=1079 loss=-0.730061
+__main__ - INFO - epoch=0 step=1087 loss=-0.926567
+__main__ - INFO - epoch=0 step=1095 loss=-0.879639
+__main__ - INFO - epoch=0 step=1103 loss=-0.866477
+__main__ - INFO - epoch=0 step=1111 loss=-0.779880
+__main__ - INFO - epoch=0 step=1119 loss=-0.754858
+__main__ - INFO - epoch=0 step=1127 loss=-0.668236
+__main__ - INFO - epoch=0 step=1135 loss=-0.755564
+__main__ - INFO - epoch=0 step=1143 loss=-0.805208
+__main__ - INFO - epoch=0 step=1151 loss=-0.724808
+__main__ - INFO - epoch=0 step=1159 loss=-0.717516
+__main__ - INFO - epoch=0 step=1167 loss=-0.826289
+__main__ - INFO - epoch=0 step=1175 loss=-0.724907
+__main__ - INFO - epoch=0 step=1183 loss=-0.501724
+__main__ - INFO - epoch=0 step=1191 loss=-0.857885
+__main__ - INFO - epoch=0 step=1199 loss=-0.711437
+__main__ - INFO - epoch=0 step=1207 loss=-0.738408
+utils - INFO - Loaded 2140 MATH test cases from /home/hoshimi/tech_challenge/data/MATH/original/test.jsonl
+utils - INFO - Formatted 2140 prompts
+utils - INFO - Initializing vLLM model from /home/hoshimi/tech_challenge/models/Qwen2.5-Math-1.5B-DPO
+pylatexenc.latexwalker - INFO - Ignoring parse error (tolerant parsing mode): End of input while parsing arguments of macro "\" @(1,111)
+Open LaTeX blocks:
+          @(1,111)  arguments of macro "\"
+
+pylatexenc.latexwalker - INFO - Ignoring parse error (tolerant parsing mode): Unexpected closing math mode: '\)' @(1,303)
+pylatexenc.latexwalker - INFO - Ignoring parse error (tolerant parsing mode): Unexpected closing math mode: '\]' @(1,190)
+utils - INFO - answer_reward: 0.0491
+utils - INFO - format_reward: 0.2407
+utils - INFO - reward: 0.0491
+utils - INFO - Correct (format=1, answer=1): 105/2140 (4.9%)
+utils - INFO - Format correct, answer wrong (format=1, answer=0): 410/2140 (19.2%)
+utils - INFO - Format incorrect (format=0, answer=0): 1625/2140 (75.9%)
