@@ -61,9 +61,9 @@ def collate_fn(batch, tokenizer):
     reject_ids, reject_masks = pad(reject_ids, reject_masks)
     return chosen_ids, chosen_masks, reject_ids, reject_masks, torch.tensor(ref_chosens), torch.tensor(ref_rejects)
 
-def seq_log_prob(model, input_ids, response_mask, device):
-    input_ids = input_ids.to(device)
-    response_mask = response_mask.to(device)
+def seq_log_prob(model, input_ids, response_mask):
+    input_ids = input_ids.to("cuda:0")
+    response_mask = response_mask.to("cuda:0")
     logits = model(input_ids=input_ids).logits[:, :-1, :]
     labels = input_ids[:, 1:]
     mask = response_mask[:, 1:].float()
@@ -88,14 +88,14 @@ def cache_reference_logprobs(model_path, data_path, cache_path):
             prompt = tokenizer(item["prompt"], add_special_tokens=False)["input_ids"]
             chosen = tokenizer(item["chosen"], add_special_tokens=False)["input_ids"]
             reject = tokenizer(item["rejected"], add_special_tokens=False)["input_ids"]
-            if len(prompt) + len(chosen) > 1024 or len(prompt) + len(reject) > 1024:
+            if len(prompt) + len(chosen) > 2048 or len(prompt) + len(reject) > 2048:
                 continue
             chosen_ids = torch.tensor([prompt + chosen])
             reject_ids = torch.tensor([prompt + reject])
             chosen_mask = torch.tensor([[0] * len(prompt) + [1] * len(chosen)])
             reject_mask = torch.tensor([[0] * len(prompt) + [1] * len(reject)])
-            ref_chosen = seq_log_prob(reference, chosen_ids, chosen_mask, "cuda:0").item()
-            ref_reject = seq_log_prob(reference, reject_ids, reject_mask, "cuda:0").item()
+            ref_chosen = seq_log_prob(reference, chosen_ids, chosen_mask).item()
+            ref_reject = seq_log_prob(reference, reject_ids, reject_mask).item()
             cache_file.write(json.dumps({"ref_chosen_logprob": ref_chosen, "ref_reject_logprob": ref_reject}) + "\n")
     del reference
     torch.cuda.empty_cache()
@@ -131,39 +131,31 @@ def dpo_train(model_path, data_path, cache_path, generate_path, num_epochs, num_
     for epoch in range(num_epochs):
         remain_steps = 0
         accumulated_loss = 0.0
-        accumulated_chosen_reward = 0.0
-        accumulated_reject_reward = 0.0
         accumulated_margin = 0.0
         accumulated_accuracy = 0.0
         for idx, batch in enumerate(tqdm(loader, desc=f"dpo epoch {epoch}")):
             chosen, chosen_mask, reject, reject_mask, ref_chosen, ref_reject = batch
-            policy_chosen = seq_log_prob(policy, chosen, chosen_mask, "cuda:0")
-            policy_reject = seq_log_prob(policy, reject, reject_mask, "cuda:0")
-            chosen_reward = beta * (policy_chosen - ref_chosen.to("cuda:0"))
-            reject_reward = beta * (policy_reject - ref_reject.to("cuda:0"))
-            reward_margin = chosen_reward - reject_reward
+            policy_chosen = seq_log_prob(policy, chosen, chosen_mask)
+            policy_reject = seq_log_prob(policy, reject, reject_mask)
+            reward_margin = beta * (policy_chosen - ref_chosen.to("cuda:0")) - beta * (policy_reject - ref_reject.to("cuda:0"))
             loss = -F.logsigmoid(reward_margin).mean()
             (loss / accumulation).backward()
             remain_steps += 1
             accumulated_loss += loss.item()
-            accumulated_chosen_reward += chosen_reward.mean().item()
-            accumulated_reject_reward += reject_reward.mean().item()
             accumulated_margin += reward_margin.mean().item()
             accumulated_accuracy += (reward_margin > 0).float().mean().item()
             if(idx + 1) % accumulation == 0:
                 optimizer.step()
                 optimizer.zero_grad()
                 remain_steps = 0
-                logger.info("epoch=%d step=%d loss=%.6f chosen_reward=%.6f reject_reward=%.6f margin=%.6f preference_accuracy=%.4f", epoch, idx, accumulated_loss / accumulation, accumulated_chosen_reward / accumulation, accumulated_reject_reward / accumulation, accumulated_margin / accumulation, accumulated_accuracy / accumulation)
+                logger.info("epoch=%d step=%d loss=%.6f margin=%.6f preference_accuracy=%.4f", epoch, idx, accumulated_loss / accumulation, accumulated_margin / accumulation, accumulated_accuracy / accumulation)
                 accumulated_loss = 0.0
-                accumulated_chosen_reward = 0.0
-                accumulated_reject_reward = 0.0
                 accumulated_margin = 0.0
                 accumulated_accuracy = 0.0
         if remain_steps:
             optimizer.step()
             optimizer.zero_grad()
-            logger.info("epoch=%d step=%d loss=%.6f chosen_reward=%.6f reject_reward=%.6f margin=%.6f preference_accuracy=%.4f", epoch, idx, accumulated_loss / remain_steps, accumulated_chosen_reward / remain_steps, accumulated_reject_reward / remain_steps, accumulated_margin / remain_steps, accumulated_accuracy / remain_steps)
+            logger.info("epoch=%d step=%d loss=%.6f margin=%.6f preference_accuracy=%.4f", epoch, idx, accumulated_loss / remain_steps, accumulated_margin / remain_steps, accumulated_accuracy / remain_steps)
     policy.save_pretrained(generate_path)
     tokenizer.save_pretrained(generate_path)
 
@@ -173,8 +165,8 @@ def main(
     cache_path:    Path  = typer.Option(ROOT / "data" / "MATH" / "dpo" / "Math-Step-DPO-10K-cache.jsonl"),
     generate_path: Path = typer.Option(ROOT / "models" / "Qwen2.5-Math-1.5B-DPO"),
     beta: float = typer.Option(0.4),
-    num_epochs: int = typer.Option(1),
-    num_layers: int = typer.Option(2),
+    num_epochs: int = typer.Option(2),
+    num_layers: int = typer.Option(4),
     output_path:   Path  = typer.Option(ROOT / "results" / "DPO.jsonl"),
     temperature:   float = typer.Option(1.0),
     max_tokens: int = typer.Option(1024),
@@ -183,8 +175,8 @@ def main(
                         level=logging.INFO,
                         format="%(name)s - %(levelname)s - %(message)s",
     )
-    cache_reference_logprobs(model_path, data_path, cache_path)
-    dpo_train(model_path, data_path, cache_path, generate_path, num_epochs, num_layers, beta)
+    # cache_reference_logprobs(model_path, data_path, cache_path)
+    # dpo_train(model_path, data_path, cache_path, generate_path, num_epochs, num_layers, beta)
     evaluate_model(model_path=generate_path, data_path=ROOT / "data" / "MATH" / "original" / "test.jsonl", output_path=output_path,temperature=temperature, max_tokens=max_tokens)
 
 if __name__ == "__main__":
