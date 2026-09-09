@@ -18,12 +18,15 @@ from vllm import LLM, SamplingParams
 from xopen import xopen
 
 from drgrpo_grader import r1_zero_reward_fn
-from utils import ROOT, load_test_data, load_user_prompt, evaluate_model
+from utils import ROOT, evaluate_model
 
 os.environ["VLLM_WORKER_MULTIPROC_METHOD"] = "spawn"
 os.environ["VLLM_WSL2_ENABLE_PIN_MEMORY"] = "1"
 
 logger = logging.getLogger(__name__)
+
+MAX_LENGTH = 2048
+DEVICE = "cuda:0"
 
 class DPODataset(Dataset):
     def __init__(self, data_path, cache_path, tokenizer):
@@ -34,7 +37,7 @@ class DPODataset(Dataset):
                 prompt = tokenizer(item["prompt"], add_special_tokens=False)["input_ids"]
                 chosen = tokenizer(item["chosen"], add_special_tokens=False)["input_ids"]
                 reject = tokenizer(item["rejected"], add_special_tokens=False)["input_ids"]
-                if len(prompt) + len(chosen) <= 1024 and len(prompt) + len(reject) <= 1024:
+                if len(prompt) + len(chosen) <= MAX_LENGTH and len(prompt) + len(reject) <= MAX_LENGTH:
                     cache = json.loads(next(cache_file))
                     self.data.append((prompt, chosen, reject, cache["ref_chosen_logprob"], cache["ref_reject_logprob"]))
         logger.info("Loaded %d DPO samples.", len(self.data))
@@ -62,8 +65,8 @@ def collate_fn(batch, tokenizer):
     return chosen_ids, chosen_masks, reject_ids, reject_masks, torch.tensor(ref_chosens), torch.tensor(ref_rejects)
 
 def seq_log_prob(model, input_ids, response_mask):
-    input_ids = input_ids.to("cuda:0")
-    response_mask = response_mask.to("cuda:0")
+    input_ids = input_ids.to(DEVICE)
+    response_mask = response_mask.to(DEVICE)
     logits = model(input_ids=input_ids).logits[:, :-1, :]
     labels = input_ids[:, 1:]
     mask = response_mask[:, 1:].float()
@@ -88,7 +91,7 @@ def cache_reference_logprobs(model_path, data_path, cache_path):
             prompt = tokenizer(item["prompt"], add_special_tokens=False)["input_ids"]
             chosen = tokenizer(item["chosen"], add_special_tokens=False)["input_ids"]
             reject = tokenizer(item["rejected"], add_special_tokens=False)["input_ids"]
-            if len(prompt) + len(chosen) > 2048 or len(prompt) + len(reject) > 2048:
+            if len(prompt) + len(chosen) > MAX_LENGTH or len(prompt) + len(reject) > MAX_LENGTH:
                 continue
             chosen_ids = torch.tensor([prompt + chosen])
             reject_ids = torch.tensor([prompt + reject])
@@ -107,7 +110,7 @@ def dpo_train(model_path, data_path, cache_path, generate_path, num_epochs, num_
         model_path,
         dtype=torch.bfloat16,
         attn_implementation="sdpa",
-        device_map="cuda:0"
+        device_map=DEVICE
     )
     policy.train()
     for p in policy.parameters():
@@ -120,7 +123,7 @@ def dpo_train(model_path, data_path, cache_path, generate_path, num_epochs, num_
 
     policy.gradient_checkpointing_enable()
     policy.config.use_cache = False
-    optimizer = torch.optim.AdamW((p for p in policy.parameters() if p.requires_grad), lr = 5e-6)
+    optimizer = torch.optim.AdamW((p for p in policy.parameters() if p.requires_grad), lr=5e-6)
     loader = DataLoader(
         dataset,
         batch_size=1, 
@@ -137,7 +140,7 @@ def dpo_train(model_path, data_path, cache_path, generate_path, num_epochs, num_
             chosen, chosen_mask, reject, reject_mask, ref_chosen, ref_reject = batch
             policy_chosen = seq_log_prob(policy, chosen, chosen_mask)
             policy_reject = seq_log_prob(policy, reject, reject_mask)
-            reward_margin = beta * (policy_chosen - ref_chosen.to("cuda:0")) - beta * (policy_reject - ref_reject.to("cuda:0"))
+            reward_margin = beta * ((policy_chosen - ref_chosen.to(DEVICE)) - (policy_reject - ref_reject.to(DEVICE)))
             loss = -F.logsigmoid(reward_margin).mean()
             (loss / accumulation).backward()
             remain_steps += 1
@@ -164,9 +167,9 @@ def main(
     data_path:     Path  = typer.Option(ROOT / "data" / "MATH" / "dpo" / "Math-Step-DPO-10K.jsonl"),
     cache_path:    Path  = typer.Option(ROOT / "data" / "MATH" / "dpo" / "Math-Step-DPO-10K-cache.jsonl"),
     generate_path: Path = typer.Option(ROOT / "models" / "Qwen2.5-Math-1.5B-DPO"),
-    beta: float = typer.Option(0.4),
-    num_epochs: int = typer.Option(2),
-    num_layers: int = typer.Option(4),
+    beta: float = typer.Option(0.35),
+    num_epochs: int = typer.Option(1),
+    num_layers: int = typer.Option(2),
     output_path:   Path  = typer.Option(ROOT / "results" / "DPO.jsonl"),
     temperature:   float = typer.Option(1.0),
     max_tokens: int = typer.Option(1024),
@@ -175,8 +178,8 @@ def main(
                         level=logging.INFO,
                         format="%(name)s - %(levelname)s - %(message)s",
     )
-    # cache_reference_logprobs(model_path, data_path, cache_path)
-    # dpo_train(model_path, data_path, cache_path, generate_path, num_epochs, num_layers, beta)
+    cache_reference_logprobs(model_path, data_path, cache_path)
+    dpo_train(model_path, data_path, cache_path, generate_path, num_epochs, num_layers, beta)
     evaluate_model(model_path=generate_path, data_path=ROOT / "data" / "MATH" / "original" / "test.jsonl", output_path=output_path,temperature=temperature, max_tokens=max_tokens)
 
 if __name__ == "__main__":

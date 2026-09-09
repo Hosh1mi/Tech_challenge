@@ -65,6 +65,31 @@ Results:
 
 The problem is not enough data.
 
+## DPO
+
+In the first version, the DPO formula was set up incorrectly, with also the inconsistency with the prompt and answer format, thus making the model even worse.
+
+The DPO data was rebuilt from the original `xinlai/Math-Step-DPO-10K`.
+
+The final training setup was:
+
+- model: `Qwen2.5-Math-1.5B-RSFT`
+- optimizer: AdamW
+- learning rate: `3e-6`
+- beta: `0.35`
+- batch size: 1, gradient accumulation: 8
+- trainable layers: last 2 transformer layers and `lm_head`
+- 1 epoch, max-length 1024
+
+Results:
+
+| Reward | RSFT | DPO | Diff |
+|--------|------|-----|------|
+| Format | 485/2140 = 22.66% | 566/2140 = 26.45% | +17% |
+| Answer | 98/2140 = 4.58% | 102/2140 = 4.77% | +4% |
+
+2 epochs and 4 layers make it worse, maybe because of the small dataset?
+
 ## idk
 
 `Qwen2.5-Math-1.5B` is not a chat/instruct model itself. So giving chat template outputs gibberish:
