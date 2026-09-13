@@ -90,6 +90,31 @@ Results:
 
 2 epochs and 4 layers make it worse, maybe because of the small dataset?
 
+## GRPO
+```
+sha256sum models/Qwen2.5-Math-1.5B-DPO/model.safetensors models/Qwen2.5-Math-1.5B-GRPO/model.safetensors;
+f9cdcb8a845fbdd9b18497b89ee789c6785106c828641591a476affffcb6b725  models/Qwen2.5-Math-1.5B-DPO/model.safetensors
+fda1cb8bfe4862390cf95ab4d22d77551dcea128dfc2902fecd95eccc7e16458  models/Qwen2.5-Math-1.5B-GRPO/model.safetensors
+```
+The loss itself is not worth recording I think. But it did update the parameters.
+
+Results:
+
+| Reward | DPO | GRPO | Diff |
+|--------|------|-----|------|
+| Format | 26.45% | 28.18% | +6.54% |
+| Answer | 4.77% | 5.98%  | +25.37% |
+
+The GRPO hyperparameters were adjusted:
+
+- `rollout_batch_size=1`
+- `group_size=2`
+- `sampling_max_tokens=256`
+- `train_batch_size=1`
+- `gradient_accumulation_steps=8
+- `gpu_memory_utilization=0.7`
+- `max_model_len=1024`
+
 ## idk
 
 `Qwen2.5-Math-1.5B` is not a chat/instruct model itself. So giving chat template outputs gibberish:
